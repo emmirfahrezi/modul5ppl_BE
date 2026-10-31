@@ -19,6 +19,11 @@ import { PrismaModule } from './common/prisma/prisma.module';
 import { HealthModule } from './modules/health/health.module';
 import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { IntegrationsModule } from './modules/integrations/integrations.module';
+import { CatalogModule } from './modules/catalog/catalog.module';
+import { ServiceRequestsModule } from './modules/service-requests/service-requests.module';
+import { CartModule } from './modules/cart/cart.module';
+import { EventsModule } from './modules/events/events.module';
 
 @Module({
   imports: [
@@ -36,6 +41,11 @@ import { AuthModule } from './modules/auth/auth.module';
     AuthModule,
     UsersModule,
     HealthModule,
+    IntegrationsModule,
+    CatalogModule,
+    ServiceRequestsModule,
+    CartModule,
+    EventsModule,
   ],
   providers: [
     // Global guards

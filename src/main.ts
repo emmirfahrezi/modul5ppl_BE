@@ -1,4 +1,10 @@
-import { ValidationPipe, VersioningType, ClassSerializerInterceptor } from '@nestjs/common';
+import {
+  ValidationPipe,
+  VersioningType,
+  ClassSerializerInterceptor,
+  HttpStatus,
+  HttpException,
+} from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestFactory, Reflector } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
@@ -34,7 +40,7 @@ async function bootstrap() {
     defaultVersion: '1',
   });
 
-  // Global validation pipe
+  // Global validation pipe with Bab 4 contract (422 and fields)
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -43,26 +49,60 @@ async function bootstrap() {
       transformOptions: {
         enableImplicitConversion: true,
       },
+      exceptionFactory: (errors) => {
+        const fields: Record<string, string> = {};
+        for (const err of errors) {
+          if (err.constraints) {
+            fields[err.property] = Object.values(err.constraints)[0];
+          }
+        }
+        return new HttpException(
+          {
+            code: 'VALIDATION_ERROR',
+            message: 'Isian tidak lolos validasi',
+            fields,
+          },
+          HttpStatus.UNPROCESSABLE_ENTITY,
+        );
+      },
     }),
   );
 
   // Class serializer for excluding fields (like password)
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 
-  // Swagger Documentation
+  // Swagger Documentation as per Panduan Bab 7 (/api/m5/v1/docs)
   if (swaggerEnabled) {
     const config = new DocumentBuilder()
-      .setTitle('PPLM5 API')
-      .setDescription('PPLM5 Backend API Documentation')
+      .setTitle('API Modul M5 - Katalog & Keranjang Belanja')
+      .setDescription('Araya Business Hub Platform - Modul M5 API Documentation')
       .setVersion('1.0')
-      .addTag('Authentication', 'Authentication endpoints')
-      .addTag('Users', 'User management endpoints')
-      .addTag('Health', 'Health check endpoints')
+      .addBearerAuth(
+        {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          description: 'Token JWT dari Modul M1',
+        },
+        'bearerAuth',
+      )
+      .addApiKey(
+        {
+          type: 'apiKey',
+          in: 'header',
+          name: 'X-Service-Key',
+          description: 'Kunci modul untuk komunikasi antarmodul',
+        },
+        'serviceKey',
+      )
+      .addTag('Catalog', 'Katalog publik unit usaha dan produk (M5-US1, M5-US5)')
+      .addTag('Cart', 'Keranjang belanja dan checkout ke M4 (M5-US3, M5-US4)')
+      .addTag('Service Requests', 'Formulir permintaan layanan ke unit usaha (M5-US2)')
+      .addTag('Events', 'Webhook penerima event antarmodul (Bab 5)')
       .build();
 
     const document = SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup(swaggerPath, app, document, {
-      useGlobalPrefix: true,
+    SwaggerModule.setup('api/m5/v1/docs', app, document, {
       swaggerOptions: {
         persistAuthorization: true,
         defaultModelsExpandDepth: -1,
@@ -75,7 +115,7 @@ async function bootstrap() {
   console.log(`\n🚀 Application is running on: http://localhost:${port}/`);
   console.log(`🌍 Environment: ${configService.get<string>('app.env')}\n`);
   if (swaggerEnabled) {
-    console.log(`📚 Swagger Documentaion on : http://localhost:${port}/api/${swaggerPath}`);
+    console.log(`📚 Swagger Documentation on : http://localhost:${port}/api/m5/v1/docs`);
   }
   console.log(`📊 Health check: http://localhost:${port}/health`);
   console.log(`🏓 Ping endpoint: http://localhost:${port}/ping\n`);

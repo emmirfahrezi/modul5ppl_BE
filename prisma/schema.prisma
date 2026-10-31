@@ -73,3 +73,62 @@ model PositionPermission {
   @@unique([position_id, permission_id])
   @@map("position_permissions")
 }
+
+// ============================================
+// Modul M5: Katalog, Layanan, & Keranjang Belanja
+// ============================================
+
+model Cart {
+  id          Int        @id @default(autoincrement())
+  customer_id Int        @unique
+  created_at  DateTime   @default(now())
+  updated_at  DateTime   @updatedAt
+
+  items       CartItem[]
+
+  @@map("carts")
+}
+
+model CartItem {
+  id          Int      @id @default(autoincrement())
+  cart_id     Int
+  product_id  Int      // ID produk dari Modul M4
+  qty         Int      @default(1)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  cart        Cart     @relation(fields: [cart_id], references: [id], onDelete: Cascade)
+
+  @@unique([cart_id, product_id])
+  @@map("cart_items")
+}
+
+model ServiceRequest {
+  id             Int      @id @default(autoincrement())
+  customer_id    Int?     // ID customer dari M1 (bila login)
+  customer_name  String
+  customer_email String
+  customer_phone String
+  unit_usaha_id  Int      // ID Unit Usaha rujukan Modul M2
+  service_id     Int?     // ID Layanan spesifik (opsional)
+  title          String
+  description    String
+  status         String   @default("pending") // pending, diteruskan, diproses, selesai, ditolak
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  @@map("service_requests")
+}
+
+model ProcessedEvent {
+  event_id       String   @id // UUID unik sesuai Panduan Bab 5
+  event_type     String
+  source_module  String
+  occurred_at    DateTime
+  recipient_role String?
+  payload        Json
+  received_at    DateTime @default(now())
+
+  @@map("processed_events")
+}
+

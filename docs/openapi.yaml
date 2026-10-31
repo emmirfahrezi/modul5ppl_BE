@@ -1,0 +1,450 @@
+openapi: 3.0.3
+info:
+  title: API Modul M5 - Katalog & Keranjang Belanja
+  description: Dokumentasi resmi API Modul M5 Araya Business Hub Platform (Katalog Publik, Permintaan Layanan, dan Keranjang Belanja)
+  version: 1.0.0
+servers:
+  - url: https://[server-bersama]/api/m5/v1
+    description: Server Bersama Kelas
+  - url: http://localhost:3000/api/m5/v1
+    description: Server Lokal Development
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token JWT dari Modul M1 (berlaku 8 jam)
+    serviceKey:
+      type: apiKey
+      in: header
+      name: X-Service-Key
+      description: Kunci modul untuk komunikasi antarmodul
+
+  schemas:
+    SuccessEnvelopeSingle:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+
+    SuccessEnvelopeList:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            type: object
+        meta:
+          type: object
+          properties:
+            page:
+              type: integer
+              example: 1
+            per_page:
+              type: integer
+              example: 20
+            total:
+              type: integer
+              example: 57
+            total_pages:
+              type: integer
+              example: 3
+
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: ITEMS_EMPTY
+            message:
+              type: string
+              example: Keranjang masih kosong
+            fields:
+              type: object
+              nullable: true
+              example:
+                customer_phone: Nomor telepon minimal 8 digit
+
+    BusinessUnit:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: BPU Percetakan & Konveksi
+        category:
+          type: string
+          example: Percetakan
+        division:
+          type: string
+          example: Produksi
+        description:
+          type: string
+          example: Layanan cetak dokumen, banner, dan konveksi
+        is_active:
+          type: boolean
+          example: true
+
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 31
+        name:
+          type: string
+          example: Cetak Banner Vinyl Frontlite 280gr
+        category:
+          type: string
+          example: Percetakan
+        unit_usaha_id:
+          type: integer
+          example: 1
+        price:
+          type: integer
+          example: 25000
+        description:
+          type: string
+          example: Cetak banner spanduk per meter persegi outdoor
+        is_active:
+          type: boolean
+          example: true
+
+    CartItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        product_id:
+          type: integer
+          example: 31
+        product_name:
+          type: string
+          example: Cetak Banner Vinyl Frontlite 280gr
+        unit_price:
+          type: integer
+          example: 25000
+        qty:
+          type: integer
+          example: 2
+        subtotal:
+          type: integer
+          example: 50000
+
+    Cart:
+      type: object
+      properties:
+        cart_id:
+          type: integer
+          example: 10
+        customer_id:
+          type: integer
+          example: 17
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+        badge_count:
+          type: integer
+          example: 2
+        total_items:
+          type: integer
+          example: 1
+        total_amount:
+          type: integer
+          example: 50000
+
+    ServiceRequestInput:
+      type: object
+      required:
+        - unit_usaha_id
+        - customer_name
+        - customer_email
+        - customer_phone
+        - title
+        - description
+      properties:
+        unit_usaha_id:
+          type: integer
+          example: 1
+        service_id:
+          type: integer
+          nullable: true
+          example: 50
+        customer_name:
+          type: string
+          example: Budi Santoso
+        customer_email:
+          type: string
+          example: budi@example.com
+        customer_phone:
+          type: string
+          example: '081234567890'
+        title:
+          type: string
+          example: Permintaan Penawaran Cetak Majalah Kampus
+        description:
+          type: string
+          example: Kebutuhan cetak 500 eksemplar majalah kampus full colour.
+
+    InboundEvent:
+      type: object
+      required:
+        - event_id
+        - event_type
+        - source_module
+        - occurred_at
+        - payload
+      properties:
+        event_id:
+          type: string
+          format: uuid
+          example: 6f1c2b9e-0d4a-4f7b-9a51-1e2c3d4f5a6b
+        event_type:
+          type: string
+          example: sale.paid
+        source_module:
+          type: string
+          example: M6
+        occurred_at:
+          type: string
+          format: date-time
+          example: '2026-10-28T10:05:12+07:00'
+        recipient_role:
+          type: string
+          nullable: true
+          example: null
+        payload:
+          type: object
+          example:
+            sale_id: 88
+            total_amount: 85000
+
+paths:
+  /catalog/overview:
+    get:
+      summary: Melihat profil & katalog seluruh unit usaha BPU (M5-US1)
+      description: Endpoint publik untuk halaman beranda customer
+      responses:
+        '200':
+          description: Berhasil memuat unit usaha dan katalog
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelopeSingle'
+
+  /catalog/business-units:
+    get:
+      summary: Daftar unit usaha BPU aktif (M5-US1)
+      responses:
+        '200':
+          description: Daftar unit usaha aktif
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelopeList'
+
+  /catalog/products:
+    get:
+      summary: Mencari dan menyaring katalog produk/jasa (M5-US5)
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+          description: Kata kunci pencarian
+        - name: unit_usaha_id
+          in: query
+          schema:
+            type: integer
+          description: Filter ID unit usaha
+        - name: category
+          in: query
+          schema:
+            type: string
+          description: Filter kategori produk
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Hasil pencarian/filter katalog (200 data kosong jika tidak ada)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelopeList'
+
+  /service-requests:
+    post:
+      summary: Mengisi formulir permintaan layanan ke unit usaha (M5-US2)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceRequestInput'
+      responses:
+        '201':
+          description: Permintaan layanan berhasil disimpan dan diteruskan
+        '422':
+          description: Validasi gagal (isian form tidak lengkap)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /cart:
+    get:
+      summary: Melihat isi keranjang belanja customer (M5-US3)
+      responses:
+        '200':
+          description: Data isi keranjang belanja
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+    delete:
+      summary: Mengosongkan keranjang belanja
+      responses:
+        '200':
+          description: Keranjang berhasil dikosongkan
+
+  /cart/items:
+    post:
+      summary: Menambahkan produk ke keranjang belanja (M5-US3)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - product_id
+              properties:
+                product_id:
+                  type: integer
+                  example: 31
+                qty:
+                  type: integer
+                  default: 1
+                  example: 1
+      responses:
+        '200':
+          description: Produk berhasil ditambahkan (qty bertambah bila sudah ada)
+        '409':
+          description: Produk sudah tidak aktif
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /cart/items/{id}:
+    patch:
+      summary: Mengubah kuantitas item di keranjang
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - qty
+              properties:
+                qty:
+                  type: integer
+                  example: 3
+      responses:
+        '200':
+          description: Kuantitas item berhasil diperbarui
+    delete:
+      summary: Menghapus item dari keranjang
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Item berhasil dihapus
+
+  /cart/checkout:
+    post:
+      summary: Checkout keranjang menjadi Order ke Modul M4 (M5-US4 / Kontrak K-04)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                source:
+                  type: string
+                  example: website
+      responses:
+        '201':
+          description: Order berhasil terbentuk di Modul M4
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelopeSingle'
+        '422':
+          description: Keranjang masih kosong (ITEMS_EMPTY)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Customer belum login (UNAUTHENTICATED)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /events:
+    post:
+      summary: Webhook penerima event antarmodul (Bab 5 Panduan Integrasi)
+      security:
+        - serviceKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InboundEvent'
+      responses:
+        '200':
+          description: Event berhasil diterima (idempotent, return 200 seketika)
+

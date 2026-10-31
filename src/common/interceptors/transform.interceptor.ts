@@ -1,51 +1,35 @@
-import { ApiResponseDto } from '@common/dto/api-response.dto';
-import { map } from 'rxjs/operators';
-import { Observable } from 'rxjs';
 import {
   Injectable,
-  HttpStatus,
-  CallHandler,
   NestInterceptor,
   ExecutionContext,
+  CallHandler,
 } from '@nestjs/common';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { ApiResponseDto } from '@common/dto/api-response.dto';
 
 @Injectable()
 export class TransformInterceptor<T> implements NestInterceptor<T, ApiResponseDto<T>> {
   intercept(context: ExecutionContext, next: CallHandler): Observable<ApiResponseDto<T>> {
-    const request = context.switchToHttp().getRequest();
-    const response = context.switchToHttp().getResponse();
-
     return next.handle().pipe(
       map((data) => {
-        // If data is already in ApiResponseDto format, return as is
-        if (data && typeof data === 'object' && 'statusCode' in data && 'message' in data) {
+        // If data is already in standardized ApiResponse format, return as is
+        if (data && typeof data === 'object' && 'success' in data) {
           return data;
         }
 
-        // Default success message based on HTTP method
-        let message = 'Operation successful';
-
-        switch (request.method) {
-          case 'POST':
-            message = 'Resource created successfully';
-            response.status(HttpStatus.CREATED);
-            break;
-          case 'PUT':
-          case 'PATCH':
-            message = 'Resource updated successfully';
-            break;
-          case 'DELETE':
-            message = 'Resource deleted successfully';
-            break;
-          case 'GET':
-            message = 'Data retrieved successfully';
-            break;
+        // If returned data has both data and pagination meta
+        if (data && typeof data === 'object' && 'data' in data && 'meta' in data) {
+          return {
+            success: true,
+            data: data.data,
+            meta: data.meta,
+          };
         }
 
         return {
-          statusCode: response.statusCode || HttpStatus.OK,
-          message,
-          data,
+          success: true,
+          data: data !== undefined ? data : null,
         };
       }),
     );

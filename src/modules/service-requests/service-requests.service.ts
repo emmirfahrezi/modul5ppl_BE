@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '@common/prisma/prisma.service';
-import { M2Service } from '@modules/integrations/m2.service';
+import { PrismaService } from '../../common/prisma/prisma.service';
+import { M2Service } from '../integrations/m2.service';
 import { CreateServiceRequestDto } from './dto/create-service-request.dto';
 
 @Injectable()

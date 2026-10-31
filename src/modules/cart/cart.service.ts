@@ -1,7 +1,7 @@
 import { Injectable, HttpStatus, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '@common/prisma/prisma.service';
-import { M4Service } from '@modules/integrations/m4.service';
-import { BusinessException } from '@common/exceptions/business.exception';
+import { PrismaService } from '../../common/prisma/prisma.service';
+import { M4Service } from '../integrations/m4.service';
+import { BusinessException } from '../../common/exceptions/business.exception';
 import { AddToCartDto } from './dto/add-to-cart.dto';
 import { CheckoutDto } from './dto/checkout.dto';
 

@@ -1,7 +1,7 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
-import { JwtPayload } from '@modules/auth/core/interfaces/jwt-payload.interface';
-import { PERMISSIONS_KEY } from '@common/decorators/permissions.decorator';
-import { IS_PUBLIC_KEY } from '@common/decorators/public.decorator';
+import { JwtPayload } from '../../modules/auth/core/interfaces/jwt-payload.interface';
+import { PERMISSIONS_KEY } from '../decorators/permissions.decorator';
+import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { Reflector } from '@nestjs/core';
 
 @Injectable()

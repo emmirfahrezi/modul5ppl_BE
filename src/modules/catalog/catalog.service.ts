@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { M2Service, BusinessUnitDto } from '@modules/integrations/m2.service';
-import { M4Service, ProductDto } from '@modules/integrations/m4.service';
+import { M2Service, BusinessUnitDto } from '../integrations/m2.service';
+import { M4Service, ProductDto } from '../integrations/m4.service';
 import { CatalogQueryDto } from './dto/catalog-query.dto';
 
 export interface CatalogOverviewDto {

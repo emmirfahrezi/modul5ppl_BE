@@ -1,6 +1,6 @@
 import { Injectable, Logger, HttpStatus } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { BusinessException } from '@common/exceptions/business.exception';
+import { BusinessException } from '../../common/exceptions/business.exception';
 
 export interface ProductDto {
   id: number;

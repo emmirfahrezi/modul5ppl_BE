@@ -1,6 +1,6 @@
 import { Controller, Post, Body, Get, Param, ParseIntPipe, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiCreatedResponse, ApiParam } from '@nestjs/swagger';
-import { Public } from '@common/decorators/public.decorator';
+import { Public } from '../../../../common/decorators/public.decorator';
 import { ServiceRequestsService } from '../../service-requests.service';
 import { CreateServiceRequestDto } from '../../dto/create-service-request.dto';
 

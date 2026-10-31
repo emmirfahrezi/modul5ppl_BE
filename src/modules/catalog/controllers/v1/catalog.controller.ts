@@ -1,6 +1,6 @@
 import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags, ApiParam, ApiOkResponse } from '@nestjs/swagger';
-import { Public } from '@common/decorators/public.decorator';
+import { Public } from '../../../../common/decorators/public.decorator';
 import { CatalogService } from '../../catalog.service';
 import { CatalogQueryDto } from '../../dto/catalog-query.dto';
 

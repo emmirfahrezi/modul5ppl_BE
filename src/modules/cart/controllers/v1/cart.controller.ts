@@ -11,7 +11,7 @@ import {
   Headers,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
-import { Public } from '@common/decorators/public.decorator';
+import { Public } from '../../../../common/decorators/public.decorator';
 import { CartService } from '../../cart.service';
 import { AddToCartDto } from '../../dto/add-to-cart.dto';
 import { UpdateCartItemDto } from '../../dto/update-cart-item.dto';

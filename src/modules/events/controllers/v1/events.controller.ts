@@ -1,6 +1,6 @@
 import { Controller, Post, Body, Headers, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiHeader, ApiOkResponse } from '@nestjs/swagger';
-import { Public } from '@common/decorators/public.decorator';
+import { Public } from '../../../../common/decorators/public.decorator';
 import { EventsService } from '../../events.service';
 import { InboundEventDto } from '../../dto/inbound-event.dto';
 

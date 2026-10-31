@@ -8,8 +8,21 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   private readonly logger = new Logger(PrismaService.name);
 
   constructor() {
-    const connectionString = process.env.DATABASE_URL;
-    const pool = new Pool({ connectionString });
+    const connectionString =
+      process.env.DATABASE_URL ||
+      'postgresql://postgres:postgres@localhost:5432/PPLM5_db?schema=public';
+
+    const pool = new Pool({
+      connectionString,
+      connectionTimeoutMillis: 5000,
+      idleTimeoutMillis: 0,
+      allowExitOnIdle: true,
+      max: 1,
+      ssl: {
+        rejectUnauthorized: false,
+      },
+    });
+
     const adapter = new PrismaPg(pool as any);
 
     super({
@@ -22,8 +35,26 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   }
 
   async onModuleInit() {
-    await this.$connect();
-    this.logger.log('✅ Database connected successfully');
+    // If on Vercel and DATABASE_URL is not provided or points to localhost, don't crash the serverless container
+    if (
+      process.env.VERCEL &&
+      (!process.env.DATABASE_URL ||
+        process.env.DATABASE_URL.includes('localhost') ||
+        process.env.DATABASE_URL.includes('127.0.0.1'))
+    ) {
+      this.logger.warn(
+        '⚠️ DATABASE_URL is not set or points to localhost on Vercel. Database queries will fail until a cloud PostgreSQL DATABASE_URL is provided in Vercel settings.',
+      );
+      return;
+    }
+
+    try {
+      // Prisma connects automatically on first query.
+      // This prevents Cold Start crashes and serverless timeout on Vercel.
+      this.logger.log('✅ Prisma Service Initialized');
+    } catch (error: any) {
+      this.logger.error(`❌ Prisma initialization error: ${error.message}`);
+    }
 
     // Log queries in development
     if (process.env.NODE_ENV === 'development') {
@@ -36,8 +67,12 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   }
 
   async onModuleDestroy() {
-    await this.$disconnect();
-    this.logger.log('Database disconnected');
+    try {
+      await this.$disconnect();
+      this.logger.log('Database disconnected');
+    } catch (error: any) {
+      this.logger.error(`Database disconnect error: ${error.message}`);
+    }
   }
 
   async cleanDatabase() {
@@ -46,7 +81,6 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     }
 
     const models = Reflect.ownKeys(this).filter((key) => key[0] !== '_');
-
     return Promise.all(models.map((modelKey) => (this as any)[modelKey].deleteMany()));
   }
 }

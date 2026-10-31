@@ -5,10 +5,10 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "build": "npm run clean && tsc",
-    "clean": "rm -rf dist",
-    "vercel-build": "prisma generate && npm run build",
+    "build": "prisma generate && npm run clean && tsc && tsc-alias",
+    "clean": "node -e \"try { require('fs').rmSync('dist', { recursive: true, force: true }); require('fs').rmSync('tsconfig.tsbuildinfo', { force: true }); } catch (e) {}\"",
     "copy-templates": "cp -r templates dist/",
+    "postinstall": "prisma generate",
     "dev": "ts-node src/cli.ts",
     "prepublishOnly": "npm run build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
@@ -73,6 +73,7 @@
     "ts-jest": "^29.4.11",
     "ts-loader": "^9.6.2",
     "ts-node": "^10.9.2",
+    "tsc-alias": "^1.9.10",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^6.0.3"
   },

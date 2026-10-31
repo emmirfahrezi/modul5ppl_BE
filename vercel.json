@@ -1,16 +1,16 @@
 {
   "version": 2,
-  "builds": [
+  "buildCommand": "npm run build",
+  "rewrites": [
     {
-      "src": "api/index.ts",
-      "use": "@vercel/node"
+      "source": "/(.*)",
+      "destination": "/api"
     }
   ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "api/index.ts"
+  "functions": {
+    "api/index.ts": {
+      "includeFiles": "dist/**"
     }
-  ]
+  },
+  "regions": ["sin1"]
 }
-

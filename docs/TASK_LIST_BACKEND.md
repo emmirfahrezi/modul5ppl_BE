@@ -218,3 +218,4 @@
   * Pembuatan spesifikasi resmi `docs/openapi.yaml` (OpenAPI 3.0.3).
   * Setup Swagger UI interaktif di endpoint `/api/m5/v1/docs`.
   * Konfigurasi serverless deployment Vercel (`api/index.ts`, `vercel.json`, `tsc-alias`) dengan status produksi aktif.
+

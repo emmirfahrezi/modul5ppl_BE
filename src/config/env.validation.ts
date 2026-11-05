@@ -1,7 +1,7 @@
 import * as Joi from 'joi';
 
 export const validationSchema = Joi.object({
-  // Application
+  // Applications
   NODE_ENV: Joi.string()
     .valid('development', 'production', 'test', 'staging')
     .default('development'),

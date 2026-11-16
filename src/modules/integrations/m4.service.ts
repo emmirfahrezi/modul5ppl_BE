@@ -30,6 +30,7 @@ export interface OrderResponseDto {
 export class M4Service {
   private readonly logger = new Logger(M4Service.name);
   private readonly baseUrl: string;
+  private readonly serviceKey: string;
 
   // Fallback mock products jika server M4 belum online
   private readonly mockProducts: ProductDto[] = [
@@ -90,7 +91,10 @@ export class M4Service {
   ];
 
   constructor(private readonly configService: ConfigService) {
-    this.baseUrl = this.configService.get<string>('M4_BASE_URL') || '';
+    this.baseUrl =
+      this.configService.get<string>('M4_BASE_URL') ||
+      'https://araya-business-hub-m4.vercel.app/api/m4/v1';
+    this.serviceKey = this.configService.get<string>('M4_SERVICE_KEY') || '';
   }
 
   async getActiveProducts(query?: { q?: string; unit_usaha_id?: number }): Promise<ProductDto[]> {
@@ -100,14 +104,37 @@ export class M4Service {
         if (query?.q) url.searchParams.set('q', query.q);
         if (query?.unit_usaha_id) url.searchParams.set('unit_usaha_id', String(query.unit_usaha_id));
 
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+        };
+        if (this.serviceKey) {
+          headers['X-Service-Key'] = this.serviceKey;
+        }
+
         const response = await fetch(url.toString(), {
-          headers: { 'Content-Type': 'application/json' },
+          headers,
         });
 
         if (response.ok) {
           const result = await response.json();
-          const items = Array.isArray(result) ? result : result.data || [];
-          return items.filter((p: ProductDto) => p.is_active !== false);
+          const items: any[] = Array.isArray(result) ? result : result.data || [];
+          return items
+            .filter((p: any) => p.is_active !== false)
+            .map((p: any) => ({
+              id: p.id,
+              name: p.name,
+              category: p.category || (p.sku ? p.sku.split('-')[0] : 'Umum'),
+              unit_usaha_id: p.unit_usaha_id || 1,
+              price: Number(p.price) || 0,
+              description: p.description || '',
+              image_url: p.image_url || '',
+              is_active: p.is_active ?? true,
+            }));
+        } else {
+          const errRes = await response.json().catch(() => null);
+          this.logger.warn(
+            `M4 API merespons status ${response.status}: ${errRes?.error?.message || response.statusText}. Menggunakan fallback data.`,
+          );
         }
       } catch (err: any) {
         this.logger.warn(`Gagal memanggil M4 API (${this.baseUrl}): ${err?.message || err}. Menggunakan mock data.`);
@@ -157,6 +184,8 @@ export class M4Service {
         };
         if (authHeader) {
           headers['Authorization'] = authHeader;
+        } else if (this.serviceKey) {
+          headers['X-Service-Key'] = this.serviceKey;
         }
 
         const response = await fetch(`${this.baseUrl}/orders`, {
@@ -193,5 +222,33 @@ export class M4Service {
       status: 'baru',
       total_amount: totalAmount,
     };
+  }
+
+  /**
+   * Mengambil status/detail order dari M4 berdasarkan order_no atau id
+   */
+  async getOrderByNumber(orderNo: string): Promise<any | null> {
+    if (this.baseUrl) {
+      try {
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+        };
+        if (this.serviceKey) {
+          headers['X-Service-Key'] = this.serviceKey;
+        }
+
+        const response = await fetch(`${this.baseUrl}/orders/${encodeURIComponent(orderNo)}`, {
+          headers,
+        });
+
+        if (response.ok) {
+          const res = await response.json();
+          return res.data || res;
+        }
+      } catch (err: any) {
+        this.logger.warn(`Gagal mengambil order ${orderNo} dari M4: ${err?.message || err}`);
+      }
+    }
+    return null;
   }
 }

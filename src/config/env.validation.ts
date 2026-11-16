@@ -27,4 +27,9 @@ export const validationSchema = Joi.object({
   // Swagger
   SWAGGER_ENABLED: Joi.boolean().default(true),
   SWAGGER_PATH: Joi.string().default('docs'),
+
+  // External Modules
+  M2_BASE_URL: Joi.string().default(''),
+  M4_BASE_URL: Joi.string().default('https://araya-business-hub-m4.vercel.app/api/m4/v1'),
+  M4_SERVICE_KEY: Joi.string().default(''),
 });

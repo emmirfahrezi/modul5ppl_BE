@@ -22,6 +22,7 @@ export class TransformInterceptor<T> implements NestInterceptor<T, ApiResponseDt
         if (data && typeof data === 'object' && 'data' in data && 'meta' in data) {
           return {
             success: true,
+            ...(data.message ? { message: data.message } : {}),
             data: data.data,
             meta: data.meta,
           };

@@ -147,14 +147,17 @@ export class M4Service {
   ): ProductDto[] {
     let results = items.filter((p) => p.is_active !== false);
 
-    if (query?.unit_usaha_id) {
+    if (query?.unit_usaha_id !== undefined && query?.unit_usaha_id !== null) {
       results = results.filter(
-        (p) => p.unit_usaha_id === undefined || Number(p.unit_usaha_id) === Number(query.unit_usaha_id),
+        (p) =>
+          p.unit_usaha_id !== undefined &&
+          p.unit_usaha_id !== null &&
+          Number(p.unit_usaha_id) === Number(query.unit_usaha_id),
       );
     }
 
-    if (query?.q) {
-      const keyword = query.q.toLowerCase();
+    if (query?.q && query.q.trim() !== '') {
+      const keyword = query.q.trim().toLowerCase();
       results = results.filter(
         (p) =>
           (p.name && p.name.toLowerCase().includes(keyword)) ||

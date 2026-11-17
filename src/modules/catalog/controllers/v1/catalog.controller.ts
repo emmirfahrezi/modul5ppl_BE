@@ -34,10 +34,23 @@ export class CatalogController {
   }
 
   @Public()
+  @Get('filters')
+  @ApiOperation({
+    summary: 'Daftar opsi filter katalog (M5-US5)',
+    description:
+      'Mengembalikan daftar kategori/tipe, unit usaha aktif, dan rentang harga secara dinamis untuk dropdown filter UI customer',
+  })
+  @ApiOkResponse({ description: 'Opsi filter katalog berhasil diambil' })
+  async getFilters() {
+    return this.catalogService.getFilters();
+  }
+
+  @Public()
   @Get('products')
   @ApiOperation({
     summary: 'Pencarian & filter katalog produk/jasa (M5-US5)',
-    description: 'Menyaring katalog berdasarkan kata kunci, kategori, atau unit usaha dengan pagination',
+    description:
+      'Menyaring katalog berdasarkan kata kunci (q), kategori/tipe (category/type), unit usaha (unit_usaha_id), partner (partner_id), rentang harga (min_price/max_price), pengurutan (sort), dan pagination',
   })
   async getProducts(@Query() query: CatalogQueryDto) {
     return this.catalogService.getProducts(query);

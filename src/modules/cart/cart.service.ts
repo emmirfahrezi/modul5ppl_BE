@@ -36,14 +36,14 @@ export class CartService {
 
     // Ambil detail produk dari M4
     const products = await this.m4Service.getActiveProducts();
-    const productMap = new Map(products.map((p) => [p.id, p]));
+    const productMap = new Map(products.map((p) => [String(p.id), p]));
 
     let totalAmount = 0;
     let badgeCount = 0;
 
     const items = cart.items.map((item) => {
-      const product = productMap.get(item.product_id);
-      const unitPrice = product ? product.price : 0;
+      const product = productMap.get(String(item.product_id));
+      const unitPrice = product ? Number(product.price) || 0 : 0;
       const subtotal = unitPrice * item.qty;
 
       totalAmount += subtotal;

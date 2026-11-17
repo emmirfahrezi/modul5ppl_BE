@@ -47,8 +47,11 @@ export class CatalogService {
     });
 
     if (query.category) {
+      const cat = query.category.toLowerCase();
       products = products.filter(
-        (p) => p.category.toLowerCase() === query.category!.toLowerCase(),
+        (p) =>
+          (p.category && p.category.toLowerCase() === cat) ||
+          (p.type && p.type.toLowerCase() === cat),
       );
     }
 

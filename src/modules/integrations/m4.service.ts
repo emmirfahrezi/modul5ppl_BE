@@ -6,17 +6,26 @@ export interface ProductDto {
   id: string;
   sku?: string;
   name: string;
+  description?: string;
   type?: string;
-  category: string;
-  unit_usaha_id: number;
-  partner_id?: string;
+  category?: string;
   unit?: string;
   stock?: number;
-  price: number;
+  price: number | string;
+  tax_rate_id?: string;
   tax_rate?: number;
-  description?: string;
+  tax_rates?: {
+    id: string;
+    name: string;
+    rate: string;
+  };
+  unit_usaha_id?: number;
+  partner_id?: string;
   image_url?: string;
   is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+  [key: string]: any;
 }
 
 export interface CreateOrderPayload {
@@ -132,15 +141,6 @@ export class M4Service {
       this.configService.get<string>('M4_SERVICE_KEY') || 'araya-m4-service-key-2026';
   }
 
-  private resolveCategory(p: any): string {
-    if (p.category) return p.category;
-    const sku = String(p.sku || '').toUpperCase();
-    if (sku.startsWith('AST-')) return 'Sewa Aset';
-    if (sku.startsWith('SRV-') || p.type === 'SERVICE') return 'Jasa & Layanan';
-    if (sku.startsWith('PRD-') || p.type === 'PRODUCT') return 'Produk & Merchandise';
-    return 'Umum';
-  }
-
   private applyFilters(
     items: ProductDto[],
     query?: { q?: string; unit_usaha_id?: number },
@@ -148,15 +148,17 @@ export class M4Service {
     let results = items.filter((p) => p.is_active !== false);
 
     if (query?.unit_usaha_id) {
-      results = results.filter((p) => p.unit_usaha_id === Number(query.unit_usaha_id));
+      results = results.filter(
+        (p) => p.unit_usaha_id === undefined || Number(p.unit_usaha_id) === Number(query.unit_usaha_id),
+      );
     }
 
     if (query?.q) {
       const keyword = query.q.toLowerCase();
       results = results.filter(
         (p) =>
-          p.name.toLowerCase().includes(keyword) ||
-          p.category.toLowerCase().includes(keyword) ||
+          (p.name && p.name.toLowerCase().includes(keyword)) ||
+          (p.category && p.category.toLowerCase().includes(keyword)) ||
           (p.sku && p.sku.toLowerCase().includes(keyword)) ||
           (p.type && p.type.toLowerCase().includes(keyword)) ||
           (p.description && p.description.toLowerCase().includes(keyword)),
@@ -187,31 +189,8 @@ export class M4Service {
 
         if (response.ok) {
           const result = await response.json();
-          const rawItems: any[] = Array.isArray(result) ? result : result.data || [];
-          const mapped: ProductDto[] = rawItems
-            .filter((p: any) => p.is_active !== false)
-            .map((p: any) => ({
-              id: String(p.id),
-              sku: p.sku || '',
-              name: p.name,
-              type: p.type || 'PRODUCT',
-              category: this.resolveCategory(p),
-              unit_usaha_id: p.unit_usaha_id ? Number(p.unit_usaha_id) : 1,
-              partner_id: p.partner_id ? String(p.partner_id) : undefined,
-              unit: p.unit || 'Pcs',
-              stock: p.stock !== undefined && p.stock !== null ? Number(p.stock) : undefined,
-              price: Number(p.price) || 0,
-              tax_rate: p.tax_rates?.rate
-                ? Number(p.tax_rates.rate)
-                : p.tax_rate !== undefined
-                  ? Number(p.tax_rate)
-                  : 0,
-              description: p.description || '',
-              image_url: p.image_url || '',
-              is_active: p.is_active ?? true,
-            }));
-
-          return this.applyFilters(mapped, query);
+          const rawItems: ProductDto[] = Array.isArray(result) ? result : result.data || [];
+          return this.applyFilters(rawItems, query);
         } else {
           const errRes = await response.json().catch(() => null);
           this.logger.warn(
@@ -280,7 +259,7 @@ export class M4Service {
     const orderNumber = `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
     const totalAmount = payload.items.reduce((acc, item) => {
       const prod = availableProducts.find((p) => String(p.id) === String(item.product_id));
-      return acc + (prod ? prod.price * item.qty : 50000 * item.qty);
+      return acc + (prod ? Number(prod.price) * item.qty : 50000 * item.qty);
     }, 0);
 
     return {

@@ -46,6 +46,9 @@ export class M4Service {
   private readonly logger = new Logger(M4Service.name);
   private readonly baseUrl: string;
   private readonly serviceKey: string;
+  private readonly cacheTtlMs = 60_000; // Cache produk M4 selama 60 detik di memori
+  private productsCache: { data: ProductDto[]; expiresAt: number } | null = null;
+  private inFlightProducts: Promise<ProductDto[]> | null = null;
 
   // Fallback mock products jika server M4 belum online
   private readonly mockProducts: ProductDto[] = [
@@ -171,41 +174,76 @@ export class M4Service {
     return results;
   }
 
-  async getActiveProducts(query?: { q?: string; unit_usaha_id?: number }): Promise<ProductDto[]> {
-    if (this.baseUrl) {
-      try {
-        const url = new URL(`${this.baseUrl}/products`);
-        url.searchParams.set('limit', '100');
-        if (query?.q) url.searchParams.set('q', query.q);
-        if (query?.unit_usaha_id) url.searchParams.set('unit_usaha_id', String(query.unit_usaha_id));
+  private async fetchAllActiveProductsFromM4(): Promise<ProductDto[]> {
+    const now = Date.now();
 
-        const headers: Record<string, string> = {
-          'Content-Type': 'application/json',
-        };
-        if (this.serviceKey) {
-          headers['X-Service-Key'] = this.serviceKey;
-        }
-
-        const response = await fetch(url.toString(), {
-          headers,
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          const rawItems: ProductDto[] = Array.isArray(result) ? result : result.data || [];
-          return this.applyFilters(rawItems, query);
-        } else {
-          const errRes = await response.json().catch(() => null);
-          this.logger.warn(
-            `M4 API merespons status ${response.status}: ${errRes?.error?.message || response.statusText}. Menggunakan fallback data.`,
-          );
-        }
-      } catch (err: any) {
-        this.logger.warn(`Gagal memanggil M4 API (${this.baseUrl}): ${err?.message || err}. Menggunakan mock data.`);
-      }
+    // 1. Jika cache masih segar, langsung kembalikan dari memori (< 1ms)
+    if (this.productsCache && this.productsCache.expiresAt > now) {
+      return this.productsCache.data;
     }
 
-    return this.applyFilters(this.mockProducts, query);
+    // 2. Deduplikasi: jika sudah ada request ke M4 yang sedang berjalan (mis. reload 2x bersamaan), ikut tunggu Promise yang sama
+    if (this.inFlightProducts) {
+      return this.inFlightProducts;
+    }
+
+    this.inFlightProducts = (async () => {
+      if (this.baseUrl) {
+        try {
+          const url = new URL(`${this.baseUrl}/products`);
+          url.searchParams.set('limit', '100');
+
+          const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+          };
+          if (this.serviceKey) {
+            headers['X-Service-Key'] = this.serviceKey;
+          }
+
+          const response = await fetch(url.toString(), {
+            headers,
+            signal: AbortSignal.timeout(6000),
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            const rawItems: ProductDto[] = Array.isArray(result) ? result : result.data || [];
+            this.productsCache = {
+              data: rawItems,
+              expiresAt: Date.now() + this.cacheTtlMs,
+            };
+            return rawItems;
+          } else {
+            const errRes = await response.json().catch(() => null);
+            this.logger.warn(
+              `M4 API merespons status ${response.status}: ${errRes?.error?.message || response.statusText}. Menggunakan fallback data.`,
+            );
+          }
+        } catch (err: any) {
+          this.logger.warn(
+            `Gagal memanggil M4 API (${this.baseUrl}): ${err?.message || err}. Menggunakan fallback data.`,
+          );
+        }
+      }
+
+      // 3. Jika M4 timeout/error tetapi masih punya cache lama yang valid, pakai cache lama dulu
+      if (this.productsCache) {
+        return this.productsCache.data;
+      }
+
+      return this.mockProducts;
+    })();
+
+    try {
+      return await this.inFlightProducts;
+    } finally {
+      this.inFlightProducts = null;
+    }
+  }
+
+  async getActiveProducts(query?: { q?: string; unit_usaha_id?: number }): Promise<ProductDto[]> {
+    const allProducts = await this.fetchAllActiveProductsFromM4();
+    return this.applyFilters(allProducts, query);
   }
 
   async getProductById(productId: string): Promise<ProductDto | null> {

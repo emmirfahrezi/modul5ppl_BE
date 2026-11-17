@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Header, Param, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags, ApiParam, ApiOkResponse } from '@nestjs/swagger';
 import { Public } from '../../../../common/decorators/public.decorator';
 import { CatalogService } from '../../catalog.service';
@@ -14,6 +14,7 @@ export class CatalogController {
 
   @Public()
   @Get('overview')
+  @Header('Cache-Control', 'public, max-age=15, s-maxage=30, stale-while-revalidate=60')
   @ApiOperation({
     summary: 'Melihat profil & katalog seluruh unit usaha BPU (M5-US1)',
     description: 'Menampilkan seluruh unit usaha aktif dan katalog produk dalam satu tampilan beranda customer',
@@ -25,6 +26,7 @@ export class CatalogController {
 
   @Public()
   @Get('business-units')
+  @Header('Cache-Control', 'public, max-age=15, s-maxage=30, stale-while-revalidate=60')
   @ApiOperation({
     summary: 'Daftar unit usaha BPU aktif (M5-US1)',
     description: 'Mengambil daftar unit usaha aktif yang tersedia untuk customer',
@@ -35,6 +37,7 @@ export class CatalogController {
 
   @Public()
   @Get('filters')
+  @Header('Cache-Control', 'public, max-age=15, s-maxage=30, stale-while-revalidate=60')
   @ApiOperation({
     summary: 'Daftar opsi filter katalog (M5-US5)',
     description:
@@ -47,6 +50,7 @@ export class CatalogController {
 
   @Public()
   @Get('products')
+  @Header('Cache-Control', 'public, max-age=15, s-maxage=30, stale-while-revalidate=60')
   @ApiOperation({
     summary: 'Pencarian & filter katalog produk/jasa (M5-US5)',
     description:
@@ -58,6 +62,7 @@ export class CatalogController {
 
   @Public()
   @Get('products/:id')
+  @Header('Cache-Control', 'public, max-age=15, s-maxage=30, stale-while-revalidate=60')
   @ApiOperation({
     summary: 'Detail produk/jasa katalog',
     description: 'Mengambil detail satu produk/jasa untuk ditampilkan ke customer',

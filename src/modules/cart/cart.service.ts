@@ -34,7 +34,19 @@ export class CartService {
   async getCart(customerId: number) {
     const cart = await this.getOrCreateCart(customerId);
 
-    // Ambil detail produk dari M4
+    // Jika keranjang kosong, tidak perlu memanggil API Modul M4
+    if (!cart.items || cart.items.length === 0) {
+      return {
+        cart_id: cart.id,
+        customer_id: customerId,
+        items: [],
+        badge_count: 0,
+        total_items: 0,
+        total_amount: 0,
+      };
+    }
+
+    // Ambil detail produk dari M4 (menggunakan in-memory cache M4Service)
     const products = await this.m4Service.getActiveProducts();
     const productMap = new Map(products.map((p) => [String(p.id), p]));
 

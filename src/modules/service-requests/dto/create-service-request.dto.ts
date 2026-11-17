@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEmail, IsInt, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 
 export class CreateServiceRequestDto {
   @ApiProperty({ description: 'ID Unit Usaha tujuan (dari M2)', example: 1 })
@@ -9,11 +9,14 @@ export class CreateServiceRequestDto {
   @IsInt({ message: 'unit_usaha_id harus berupa angka bulat' })
   unit_usaha_id: number;
 
-  @ApiPropertyOptional({ description: 'ID Layanan spesifik (jika ada)', example: 50 })
+  @ApiPropertyOptional({
+    description: 'ID Layanan spesifik dari M4 (UUID / opsional)',
+    example: '91180a0e-7b74-4178-9c3b-2f8a63a16a52',
+  })
   @IsOptional()
-  @Type(() => Number)
-  @IsInt({ message: 'service_id harus berupa angka bulat' })
-  service_id?: number;
+  @Transform(({ value }) => (value !== undefined && value !== null ? String(value) : undefined))
+  @IsString({ message: 'service_id harus berupa teks / UUID' })
+  service_id?: string;
 
   @ApiProperty({ description: 'Nama lengkap customer pemohon', example: 'Budi Santoso' })
   @IsNotEmpty({ message: 'Nama customer wajib diisi' })

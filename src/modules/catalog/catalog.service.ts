@@ -71,7 +71,7 @@ export class CatalogService {
     };
   }
 
-  async getProductById(id: number): Promise<ProductDto> {
+  async getProductById(id: string): Promise<ProductDto> {
     const product = await this.m4Service.getProductById(id);
     if (!product) {
       throw new NotFoundException(`Produk dengan ID ${id} tidak ditemukan`);

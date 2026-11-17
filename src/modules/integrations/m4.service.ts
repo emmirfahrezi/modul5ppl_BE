@@ -3,11 +3,17 @@ import { ConfigService } from '@nestjs/config';
 import { BusinessException } from '../../common/exceptions/business.exception';
 
 export interface ProductDto {
-  id: number;
+  id: string;
+  sku?: string;
   name: string;
+  type?: string;
   category: string;
   unit_usaha_id: number;
+  partner_id?: string;
+  unit?: string;
+  stock?: number;
   price: number;
+  tax_rate?: number;
   description?: string;
   image_url?: string;
   is_active: boolean;
@@ -16,11 +22,11 @@ export interface ProductDto {
 export interface CreateOrderPayload {
   customer_id: number;
   source: string;
-  items: { product_id: number; qty: number }[];
+  items: { product_id: string; qty: number }[];
 }
 
 export interface OrderResponseDto {
-  id: number;
+  id: number | string;
   order_no: string;
   status: string;
   total_amount: number;
@@ -35,56 +41,84 @@ export class M4Service {
   // Fallback mock products jika server M4 belum online
   private readonly mockProducts: ProductDto[] = [
     {
-      id: 31,
+      id: '31',
+      sku: 'PRD-BNNR-031',
       name: 'Cetak Banner Vinyl Frontlite 280gr',
+      type: 'PRODUCT',
       category: 'Percetakan',
       unit_usaha_id: 1,
+      unit: 'Meter',
+      stock: 100,
       price: 25000,
+      tax_rate: 11,
       description: 'Cetak banner spanduk per meter persegi outdoor',
       is_active: true,
     },
     {
-      id: 32,
+      id: '32',
+      sku: 'PRD-KAOS-032',
       name: 'Kaos Sablon DTF Katun Combed 30s',
+      type: 'PRODUCT',
       category: 'Konveksi',
       unit_usaha_id: 1,
+      unit: 'Pcs',
+      stock: 50,
       price: 65000,
+      tax_rate: 11,
       description: 'Kaos custom sablon full colour bahan adem',
       is_active: true,
     },
     {
-      id: 40,
+      id: '40',
+      sku: 'PRD-CATR-040',
       name: 'Paket Nasi Kotak Ayam Bakar Madu',
+      type: 'PRODUCT',
       category: 'Catering',
       unit_usaha_id: 2,
+      unit: 'Box',
+      stock: 200,
       price: 30000,
+      tax_rate: 11,
       description: 'Nasi kotak lengkap dengan lalapan, sambal, dan buah',
       is_active: true,
     },
     {
-      id: 41,
+      id: '41',
+      sku: 'PRD-BAKR-041',
       name: 'Roti Manis Aneka Rasa (Box isi 6)',
+      type: 'PRODUCT',
       category: 'Bakery',
       unit_usaha_id: 2,
+      unit: 'Box',
+      stock: 80,
       price: 45000,
+      tax_rate: 11,
       description: 'Roti cokelat, keju, srikaya, dan abon sapi',
       is_active: true,
     },
     {
-      id: 50,
+      id: '50',
+      sku: 'SRV-WEB-050',
       name: 'Jasa Pembuatan Landing Page Company Profile',
+      type: 'SERVICE',
       category: 'IT Service',
       unit_usaha_id: 3,
+      unit: 'Paket',
       price: 1500000,
+      tax_rate: 11,
       description: 'Website responsif modern include hosting & domain 1 tahun',
       is_active: true,
     },
     {
-      id: 60,
+      id: '60',
+      sku: 'AST-TRNS-060',
       name: 'Sewa Mobil HiAce Commuter 15 Seat + Driver',
+      type: 'SERVICE',
       category: 'Transport',
       unit_usaha_id: 4,
+      unit: 'Hari',
       price: 1200000,
+      tax_rate: 11,
       description: 'Sewa kendaraan harian include sopir dalam kota',
       is_active: true,
     },
@@ -94,13 +128,49 @@ export class M4Service {
     this.baseUrl =
       this.configService.get<string>('M4_BASE_URL') ||
       'https://araya-business-hub-m4.vercel.app/api/m4/v1';
-    this.serviceKey = this.configService.get<string>('M4_SERVICE_KEY') || '';
+    this.serviceKey =
+      this.configService.get<string>('M4_SERVICE_KEY') || 'araya-m4-service-key-2026';
+  }
+
+  private resolveCategory(p: any): string {
+    if (p.category) return p.category;
+    const sku = String(p.sku || '').toUpperCase();
+    if (sku.startsWith('AST-')) return 'Sewa Aset';
+    if (sku.startsWith('SRV-') || p.type === 'SERVICE') return 'Jasa & Layanan';
+    if (sku.startsWith('PRD-') || p.type === 'PRODUCT') return 'Produk & Merchandise';
+    return 'Umum';
+  }
+
+  private applyFilters(
+    items: ProductDto[],
+    query?: { q?: string; unit_usaha_id?: number },
+  ): ProductDto[] {
+    let results = items.filter((p) => p.is_active !== false);
+
+    if (query?.unit_usaha_id) {
+      results = results.filter((p) => p.unit_usaha_id === Number(query.unit_usaha_id));
+    }
+
+    if (query?.q) {
+      const keyword = query.q.toLowerCase();
+      results = results.filter(
+        (p) =>
+          p.name.toLowerCase().includes(keyword) ||
+          p.category.toLowerCase().includes(keyword) ||
+          (p.sku && p.sku.toLowerCase().includes(keyword)) ||
+          (p.type && p.type.toLowerCase().includes(keyword)) ||
+          (p.description && p.description.toLowerCase().includes(keyword)),
+      );
+    }
+
+    return results;
   }
 
   async getActiveProducts(query?: { q?: string; unit_usaha_id?: number }): Promise<ProductDto[]> {
     if (this.baseUrl) {
       try {
         const url = new URL(`${this.baseUrl}/products`);
+        url.searchParams.set('limit', '100');
         if (query?.q) url.searchParams.set('q', query.q);
         if (query?.unit_usaha_id) url.searchParams.set('unit_usaha_id', String(query.unit_usaha_id));
 
@@ -117,19 +187,31 @@ export class M4Service {
 
         if (response.ok) {
           const result = await response.json();
-          const items: any[] = Array.isArray(result) ? result : result.data || [];
-          return items
+          const rawItems: any[] = Array.isArray(result) ? result : result.data || [];
+          const mapped: ProductDto[] = rawItems
             .filter((p: any) => p.is_active !== false)
             .map((p: any) => ({
-              id: p.id,
+              id: String(p.id),
+              sku: p.sku || '',
               name: p.name,
-              category: p.category || (p.sku ? p.sku.split('-')[0] : 'Umum'),
-              unit_usaha_id: p.unit_usaha_id || 1,
+              type: p.type || 'PRODUCT',
+              category: this.resolveCategory(p),
+              unit_usaha_id: p.unit_usaha_id ? Number(p.unit_usaha_id) : 1,
+              partner_id: p.partner_id ? String(p.partner_id) : undefined,
+              unit: p.unit || 'Pcs',
+              stock: p.stock !== undefined && p.stock !== null ? Number(p.stock) : undefined,
               price: Number(p.price) || 0,
+              tax_rate: p.tax_rates?.rate
+                ? Number(p.tax_rates.rate)
+                : p.tax_rate !== undefined
+                  ? Number(p.tax_rate)
+                  : 0,
               description: p.description || '',
               image_url: p.image_url || '',
               is_active: p.is_active ?? true,
             }));
+
+          return this.applyFilters(mapped, query);
         } else {
           const errRes = await response.json().catch(() => null);
           this.logger.warn(
@@ -141,28 +223,12 @@ export class M4Service {
       }
     }
 
-    let results = this.mockProducts.filter((p) => p.is_active);
-
-    if (query?.unit_usaha_id) {
-      results = results.filter((p) => p.unit_usaha_id === Number(query.unit_usaha_id));
-    }
-
-    if (query?.q) {
-      const keyword = query.q.toLowerCase();
-      results = results.filter(
-        (p) =>
-          p.name.toLowerCase().includes(keyword) ||
-          p.category.toLowerCase().includes(keyword) ||
-          (p.description && p.description.toLowerCase().includes(keyword)),
-      );
-    }
-
-    return results;
+    return this.applyFilters(this.mockProducts, query);
   }
 
-  async getProductById(productId: number): Promise<ProductDto | null> {
+  async getProductById(productId: string): Promise<ProductDto | null> {
     const products = await this.getActiveProducts();
-    return products.find((p) => p.id === productId) || null;
+    return products.find((p) => String(p.id) === String(productId)) || null;
   }
 
   /**
@@ -209,10 +275,11 @@ export class M4Service {
       }
     }
 
-    // Fallback simulasi respons sukses K-04 jika M4 offline
+    // Fallback simulasi respons sukses K-04 jika M4 POST /orders belum aktif/offline
+    const availableProducts = await this.getActiveProducts();
     const orderNumber = `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
     const totalAmount = payload.items.reduce((acc, item) => {
-      const prod = this.mockProducts.find((p) => p.id === item.product_id);
+      const prod = availableProducts.find((p) => String(p.id) === String(item.product_id));
       return acc + (prod ? prod.price * item.qty : 50000 * item.qty);
     }, 0);
 

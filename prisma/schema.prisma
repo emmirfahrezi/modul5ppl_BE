@@ -92,7 +92,7 @@ model Cart {
 model CartItem {
   id          Int      @id @default(autoincrement())
   cart_id     Int
-  product_id  Int      // ID produk dari Modul M4
+  product_id  String   // ID produk (UUID / ID) dari Modul M4
   qty         Int      @default(1)
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
@@ -110,7 +110,7 @@ model ServiceRequest {
   customer_email String
   customer_phone String
   unit_usaha_id  Int      // ID Unit Usaha rujukan Modul M2
-  service_id     Int?     // ID Layanan spesifik (opsional)
+  service_id     String?  // ID Layanan spesifik dari M4 (UUID / opsional)
   title          String
   description    String
   status         String   @default("pending") // pending, diteruskan, diproses, selesai, ditolak

@@ -1,4 +1,4 @@
-import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags, ApiParam, ApiOkResponse } from '@nestjs/swagger';
 import { Public } from '../../../../common/decorators/public.decorator';
 import { CatalogService } from '../../catalog.service';
@@ -49,8 +49,8 @@ export class CatalogController {
     summary: 'Detail produk/jasa katalog',
     description: 'Mengambil detail satu produk/jasa untuk ditampilkan ke customer',
   })
-  @ApiParam({ name: 'id', type: Number, example: 31 })
-  async getProductById(@Param('id', ParseIntPipe) id: number) {
+  @ApiParam({ name: 'id', type: String, example: '91180a0e-7b74-4178-9c3b-2f8a63a16a52' })
+  async getProductById(@Param('id') id: string) {
     return this.catalogService.getProductById(id);
   }
 }

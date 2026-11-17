@@ -1,13 +1,16 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsInt, IsNotEmpty, IsOptional, Min } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
 
 export class AddToCartDto {
-  @ApiProperty({ description: 'ID produk dari Modul M4', example: 31 })
+  @ApiProperty({
+    description: 'ID produk (UUID / ID) dari Modul M4',
+    example: '91180a0e-7b74-4178-9c3b-2f8a63a16a52',
+  })
   @IsNotEmpty({ message: 'product_id wajib diisi' })
-  @Type(() => Number)
-  @IsInt({ message: 'product_id harus berupa angka bulat' })
-  product_id: number;
+  @Transform(({ value }) => (value !== undefined && value !== null ? String(value) : value))
+  @IsString({ message: 'product_id harus berupa teks / UUID' })
+  product_id: string;
 
   @ApiPropertyOptional({ description: 'Jumlah kuantitas produk yang ditambahkan (default 1)', example: 1, default: 1 })
   @IsOptional()

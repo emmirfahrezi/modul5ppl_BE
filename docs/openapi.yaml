@@ -180,6 +180,50 @@ components:
               type: string
               example: "11"
 
+    Partner:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        partner_id:
+          type: string
+          example: PRT-20261108-A9F2
+        unit_usaha_id:
+          type: integer
+          nullable: true
+          example: 1
+        nama_usaha:
+          type: string
+          example: CV Media Grafika Pasundan
+        name:
+          type: string
+          example: CV Media Grafika Pasundan
+        kategori_usaha:
+          type: string
+          example: Jasa
+        category:
+          type: string
+          example: Jasa
+        deskripsi_usaha:
+          type: string
+          example: Mitra percetakan buku, kalender, dan seminar kit resmi BPU
+        alamat_usaha:
+          type: string
+          example: Jl. Tamansari No. 6-8, Bandung
+        nomor_telepon_usaha:
+          type: string
+          example: "081223344556"
+        email_usaha:
+          type: string
+          example: mediagrafika@unpas.ac.id
+        profil_usaha:
+          type: string
+          example: https://images.unsplash.com/photo-1563986768609-322da13575f3?w=300
+        status:
+          type: string
+          example: terverifikasi
+
     CartItem:
       type: object
       properties:
@@ -314,6 +358,69 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SuccessEnvelopeList'
+
+  /catalog/partners:
+    get:
+      summary: Daftar mitra/partner BPU terverifikasi (Kontrak K-06)
+      description: Mengambil daftar mitra/partner BPU yang berstatus terverifikasi dari Modul M3 untuk etalase katalog customer
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+          description: Kata kunci pencarian nama atau deskripsi mitra
+        - name: unit_usaha_id
+          in: query
+          schema:
+            type: integer
+          description: Filter ID Unit Usaha naungan partner
+        - name: category
+          in: query
+          schema:
+            type: string
+          description: Filter kategori usaha (Produk atau Jasa)
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Daftar partner terverifikasi berhasil diambil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelopeList'
+
+  /catalog/partners/{id}:
+    get:
+      summary: Detail profil partner BPU (Kontrak K-06)
+      description: Mengambil profil detail satu partner terverifikasi berdasarkan ID atau partner_id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: PRT-20261108-A9F2
+      responses:
+        '200':
+          description: Detail profil partner berhasil diambil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelopeSingle'
+        '404':
+          description: Partner tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /catalog/filters:
     get:

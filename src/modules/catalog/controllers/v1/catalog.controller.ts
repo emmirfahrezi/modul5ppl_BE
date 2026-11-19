@@ -3,6 +3,7 @@ import { ApiOperation, ApiTags, ApiParam, ApiOkResponse } from '@nestjs/swagger'
 import { Public } from '../../../../common/decorators/public.decorator';
 import { CatalogService } from '../../catalog.service';
 import { CatalogQueryDto } from '../../dto/catalog-query.dto';
+import { PartnerQueryDto } from '../../dto/partner-query.dto';
 
 @ApiTags('Catalog')
 @Controller({
@@ -33,6 +34,31 @@ export class CatalogController {
   })
   async getBusinessUnits() {
     return this.catalogService.getBusinessUnits();
+  }
+
+  @Public()
+  @Get('partners')
+  @Header('Cache-Control', 'public, max-age=15, s-maxage=30, stale-while-revalidate=60')
+  @ApiOperation({
+    summary: 'Daftar mitra/partner BPU terverifikasi (Kontrak K-06)',
+    description:
+      'Mengambil daftar mitra/partner BPU yang berstatus terverifikasi dari Modul M3 untuk etalase katalog customer',
+  })
+  @ApiOkResponse({ description: 'Daftar partner terverifikasi berhasil diambil' })
+  async getPartners(@Query() query: PartnerQueryDto) {
+    return this.catalogService.getPartners(query);
+  }
+
+  @Public()
+  @Get('partners/:id')
+  @Header('Cache-Control', 'public, max-age=15, s-maxage=30, stale-while-revalidate=60')
+  @ApiOperation({
+    summary: 'Detail profil partner BPU (Kontrak K-06)',
+    description: 'Mengambil profil detail satu partner terverifikasi berdasarkan ID atau partner_id',
+  })
+  @ApiParam({ name: 'id', type: String, example: 'PRT-20261108-A9F2' })
+  async getPartnerById(@Param('id') id: string) {
+    return this.catalogService.getPartnerById(id);
   }
 
   @Public()

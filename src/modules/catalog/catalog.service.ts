@@ -1,17 +1,21 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { M2Service, BusinessUnitDto } from '../integrations/m2.service';
+import { M3Service, PartnerDto } from '../integrations/m3.service';
 import { M4Service, ProductDto } from '../integrations/m4.service';
 import { CatalogQueryDto } from './dto/catalog-query.dto';
+import { PartnerQueryDto } from './dto/partner-query.dto';
 
 export interface CatalogOverviewDto {
   business_units: BusinessUnitDto[];
   products: ProductDto[];
+  partners: PartnerDto[];
 }
 
 @Injectable()
 export class CatalogService {
   constructor(
     private readonly m2Service: M2Service,
+    private readonly m3Service: M3Service,
     private readonly m4Service: M4Service,
   ) {}
 
@@ -23,17 +27,60 @@ export class CatalogService {
   }
 
   /**
-   * M5-US1: Menampilkan seluruh katalog dan unit usaha dalam 1 respons terpadu
+   * K-06: Menampilkan daftar mitra/partner BPU yang terverifikasi dari Modul M3
+   */
+  async getPartners(query: PartnerQueryDto) {
+    const partners = await this.m3Service.getVerifiedPartners({
+      q: query.q,
+      unit_usaha_id: query.unit_usaha_id,
+      category: query.category,
+    });
+
+    const page = query.page && query.page > 0 ? Number(query.page) : 1;
+    const perPage =
+      query.per_page && query.per_page > 0
+        ? Math.min(Number(query.per_page), 100)
+        : 20;
+    const total = partners.length;
+    const totalPages = total === 0 ? 0 : Math.ceil(total / perPage);
+
+    const startIndex = (page - 1) * perPage;
+    const paginatedItems = partners.slice(startIndex, startIndex + perPage);
+
+    return {
+      ...(total === 0 ? { message: 'Partner atau mitra tidak ditemukan' } : {}),
+      data: paginatedItems,
+      meta: {
+        page,
+        per_page: perPage,
+        total,
+        total_pages: totalPages,
+      },
+    };
+  }
+
+  async getPartnerById(idOrPartnerId: string | number): Promise<PartnerDto> {
+    const partner = await this.m3Service.getPartnerById(idOrPartnerId);
+    if (!partner) {
+      throw new NotFoundException(`Partner #${idOrPartnerId} tidak ditemukan`);
+    }
+    return partner;
+  }
+
+  /**
+   * M5-US1: Menampilkan seluruh katalog, unit usaha, dan partner dalam 1 respons terpadu
    */
   async getOverview(): Promise<CatalogOverviewDto> {
-    const [businessUnits, products] = await Promise.all([
+    const [businessUnits, products, partners] = await Promise.all([
       this.m2Service.getActiveBusinessUnits(),
       this.m4Service.getActiveProducts(),
+      this.m3Service.getVerifiedPartners(),
     ]);
 
     return {
       business_units: businessUnits,
       products: products,
+      partners: partners,
     };
   }
 

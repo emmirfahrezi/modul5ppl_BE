@@ -29,7 +29,7 @@ export const validationSchema = Joi.object({
   SWAGGER_PATH: Joi.string().default('docs'),
 
   // External Modules
-  M2_BASE_URL: Joi.string().default(''),
+  M2_BASE_URL: Joi.string().default('https://pplmodul2-production.up.railway.app/api/v1'),
   M4_BASE_URL: Joi.string().default('https://araya-business-hub-m4.vercel.app/api/m4/v1'),
   M4_SERVICE_KEY: Joi.string().default('araya-m4-service-key-2026'),
 });

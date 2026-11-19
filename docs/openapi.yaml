@@ -85,46 +85,100 @@ components:
         id:
           type: integer
           example: 1
+        kode_unik:
+          type: string
+          example: UNIT-001
         name:
           type: string
-          example: BPU Percetakan & Konveksi
+          example: Warung Nasi Berkah
+        nama:
+          type: string
+          example: Warung Nasi Berkah
         category:
           type: string
-          example: Percetakan
+          example: Kuliner 2
         division:
           type: string
-          example: Produksi
+          example: Operasional 2
         description:
           type: string
-          example: Layanan cetak dokumen, banner, dan konveksi
+          example: Usaha makanan dan minuman
+        profil:
+          type: string
+          example: Usaha makanan dan minuman
+        status:
+          type: string
+          example: aktif
         is_active:
           type: boolean
           example: true
+        kategori:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 1
+            nama:
+              type: string
+              example: Kuliner 2
+        divisi:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 1
+            nama:
+              type: string
+              example: Operasional 2
 
     Product:
       type: object
       properties:
         id:
-          type: integer
-          example: 31
+          type: string
+          example: "91180a0e-7b74-4178-9c3b-2f8a63a16a52"
+        sku:
+          type: string
+          example: PRD-PAYG-015
         name:
           type: string
-          example: Cetak Banner Vinyl Frontlite 280gr
-        category:
-          type: string
-          example: Percetakan
-        unit_usaha_id:
-          type: integer
-          example: 1
-        price:
-          type: integer
-          example: 25000
+          example: Payung Lipat Otomatis Unpas Anti UV
         description:
           type: string
-          example: Cetak banner spanduk per meter persegi outdoor
+          example: Payung lipat 3 bukaan otomatis dengan lapisan vinyl hitam penangkal panas matahari
+        type:
+          type: string
+          example: PRODUCT
+        unit:
+          type: string
+          example: Buah
+        stock:
+          type: integer
+          example: 110
+        price:
+          type: string
+          example: "55000"
+        tax_rate_id:
+          type: string
+          example: "44af499e-f146-4f05-a532-47f30cf9c534"
         is_active:
           type: boolean
           example: true
+        partner_id:
+          type: string
+          example: "00000000-0000-0000-0000-000000000001"
+        tax_rates:
+          type: object
+          properties:
+            id:
+              type: string
+              example: "44af499e-f146-4f05-a532-47f30cf9c534"
+            name:
+              type: string
+              example: "PPN 11%"
+            rate:
+              type: string
+              example: "11"
 
     CartItem:
       type: object
@@ -133,20 +187,20 @@ components:
           type: integer
           example: 1
         product_id:
-          type: integer
-          example: 31
+          type: string
+          example: "91180a0e-7b74-4178-9c3b-2f8a63a16a52"
         product_name:
           type: string
-          example: Cetak Banner Vinyl Frontlite 280gr
+          example: Payung Lipat Otomatis Unpas Anti UV
         unit_price:
           type: integer
-          example: 25000
+          example: 55000
         qty:
           type: integer
           example: 2
         subtotal:
           type: integer
-          example: 50000
+          example: 110000
 
     Cart:
       type: object
@@ -260,6 +314,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SuccessEnvelopeList'
+
+  /catalog/filters:
+    get:
+      summary: Daftar opsi filter katalog dinamis (M5-US5)
+      description: Mengembalikan daftar kategori/tipe, unit usaha aktif dari M2, dan rentang harga produk dari M4 untuk mengisi opsi filter UI
+      responses:
+        '200':
+          description: Opsi filter berhasil diambil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelopeSingle'
 
   /catalog/products:
     get:
